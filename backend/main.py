@@ -66,9 +66,12 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[rate_limit])
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize database on startup."""
-    logger.info("Initializing database...")
-    await init_db()
-    logger.info("Database initialized.")
+    try:
+        logger.info("Initializing database...")
+        await init_db()
+        logger.info("Database initialized.")
+    except Exception as e:
+        logger.error(f"Non-fatal database startup error: {e}")
     logger.info("Threat Check backend is ready.")
     yield
     logger.info("Shutting down Threat Check backend.")

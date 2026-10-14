@@ -86,7 +86,7 @@
     backendOnline = false;
     if (statusDot) {
       statusDot.className = 'status-dot offline';
-      statusLabel.textContent = 'Local Browser Engine (Offline)';
+      statusLabel.textContent = 'Local Browser Engine (Active)';
     }
     return false;
   }
@@ -388,7 +388,6 @@
 
     showLoading(true, 'Analyzing indicators and querying threat intelligence...');
 
-    // Try backend if online (or attempt check)
     var useUrl = isProbableSingleUrl(trimmed);
     var endpoint = useUrl ? '/api/analyze/url' : '/api/analyze/message';
     var payload = useUrl ? { url: trimmed } : { message: trimmed };
@@ -396,50 +395,54 @@
     var backendSucceeded = false;
     var scanResult = null;
 
-    try {
-      var res = await fetch(API_BASE + endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        scanResult = await res.json();
-        backendSucceeded = true;
-        backendOnline = true;
-        if (statusDot) {
-          statusDot.className = 'status-dot online';
-          statusLabel.textContent = 'Backend Engine Active';
-        }
-      } else if (res.status === 400 && useUrl) {
-        // If /api/analyze/url rejected as invalid URL, retry as message
-        var msgRes = await fetch(API_BASE + '/api/analyze/message', {
+    if (backendOnline) {
+      try {
+        var res = await fetch(API_BASE + endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: trimmed }),
+          body: JSON.stringify(payload),
         });
-        if (msgRes.ok) {
-          scanResult = await msgRes.json();
+
+        if (res.ok) {
+          scanResult = await res.json();
           backendSucceeded = true;
+        } else if (res.status === 400 && useUrl) {
+          // If /api/analyze/url rejected as invalid URL, retry as message
+          var msgRes = await fetch(API_BASE + '/api/analyze/message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: trimmed }),
+          });
+          if (msgRes.ok) {
+            scanResult = await msgRes.json();
+            backendSucceeded = true;
+          } else {
+            var errData = await res.json().catch(function () { return {}; });
+            showError(errData.detail || 'Analysis request rejected by server.');
+            showLoading(false);
+            return;
+          }
+        } else if (res.status >= 500) {
+          console.warn('Backend server error (' + res.status + '), falling back to local browser engine.');
+          backendOnline = false;
+          if (statusDot) {
+            statusDot.className = 'status-dot offline';
+            statusLabel.textContent = 'Local Browser Engine (Active)';
+          }
         } else {
-          var errData = await res.json().catch(function () { return {}; });
-          showError(errData.detail || 'Analysis request rejected by server.');
+          var errObj = await res.json().catch(function () { return {}; });
+          showError(errObj.detail || 'Analysis request failed.');
           showLoading(false);
           return;
         }
-      } else {
-        var errObj = await res.json().catch(function () { return {}; });
-        showError(errObj.detail || 'Analysis request failed.');
-        showLoading(false);
-        return;
-      }
-    } catch (networkErr) {
-      // Backend unreachable: fallback to local client-side analysis
-      console.warn('Backend unavailable, falling back to local analyzer.js:', networkErr);
-      backendOnline = false;
-      if (statusDot) {
-        statusDot.className = 'status-dot offline';
-        statusLabel.textContent = 'Local Browser Engine (Offline)';
+      } catch (networkErr) {
+        // Backend unreachable: fallback to local client-side analysis
+        console.warn('Backend unavailable, falling back to local analyzer.js:', networkErr);
+        backendOnline = false;
+        if (statusDot) {
+          statusDot.className = 'status-dot offline';
+          statusLabel.textContent = 'Local Browser Engine (Active)';
+        }
       }
     }
 

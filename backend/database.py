@@ -13,11 +13,12 @@ DATABASE_PATH = os.getenv("DATABASE_PATH", "threatcheck.db")
 async def get_db_path() -> str:
     """Return the resolved database path."""
     if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
-        default_path = "/tmp/threatcheck.db"
-    else:
-        default_path = "threatcheck.db"
+        env_val = os.getenv("DATABASE_PATH", "")
+        if not env_val or not env_val.startswith("/tmp"):
+            return "/tmp/threatcheck.db"
+        return env_val
 
-    path = os.getenv("DATABASE_PATH", default_path)
+    path = os.getenv("DATABASE_PATH", "threatcheck.db")
     if os.path.isabs(path):
         return path
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), path)
@@ -25,41 +26,48 @@ async def get_db_path() -> str:
 
 async def init_db():
     """Initialize the database schema. Safe to call multiple times."""
-    db_path = await get_db_path()
-    async with aiosqlite.connect(db_path) as db:
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS scans (
-                id TEXT PRIMARY KEY,
-                scan_type TEXT NOT NULL,
-                input_preview TEXT NOT NULL,
-                input_length INTEGER NOT NULL,
-                classification TEXT NOT NULL,
-                risk_score INTEGER NOT NULL,
-                risk_level TEXT NOT NULL,
-                findings TEXT NOT NULL,
-                links TEXT,
-                recommendations TEXT NOT NULL,
-                provider_results TEXT,
-                explanation TEXT,
-                limitations TEXT,
-                status TEXT NOT NULL DEFAULT 'completed',
-                created_at TEXT NOT NULL DEFAULT (datetime('now'))
-            )
-        """)
-        await db.execute("""
-            CREATE INDEX IF NOT EXISTS idx_scans_created
-            ON scans(created_at DESC)
-        """)
-        await db.execute("""
-            CREATE INDEX IF NOT EXISTS idx_scans_type
-            ON scans(scan_type)
-        """)
-        await db.commit()
+    try:
+        db_path = await get_db_path()
+        os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
+        async with aiosqlite.connect(db_path) as db:
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS scans (
+                    id TEXT PRIMARY KEY,
+                    scan_type TEXT NOT NULL,
+                    input_preview TEXT NOT NULL,
+                    input_length INTEGER NOT NULL,
+                    classification TEXT NOT NULL,
+                    risk_score INTEGER NOT NULL,
+                    risk_level TEXT NOT NULL,
+                    findings TEXT NOT NULL,
+                    links TEXT,
+                    recommendations TEXT NOT NULL,
+                    provider_results TEXT,
+                    explanation TEXT,
+                    limitations TEXT,
+                    status TEXT NOT NULL DEFAULT 'completed',
+                    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+            """)
+            await db.execute("""
+                CREATE INDEX IF NOT EXISTS idx_scans_created
+                ON scans(created_at DESC)
+            """)
+            await db.execute("""
+                CREATE INDEX IF NOT EXISTS idx_scans_type
+                ON scans(scan_type)
+            """)
+            await db.commit()
+    except Exception as e:
+        import logging
+        logging.getLogger("threatcheck.db").error(f"Error initializing database: {e}")
+
 
 
 async def get_connection():
     """Get a database connection."""
     db_path = await get_db_path()
+    os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
     db = await aiosqlite.connect(db_path)
     db.row_factory = aiosqlite.Row
     return db

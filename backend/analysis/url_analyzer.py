@@ -132,10 +132,13 @@ def registrable_domain(host: str) -> str:
     the multi-part TLD list from the original analyzer.
     """
     if HAS_TLDEXTRACT:
-        ext = tldextract.extract(host)
-        if ext.registered_domain:
-            return ext.registered_domain
-        return host
+        try:
+            ext = tldextract.extract(host)
+            if ext.registered_domain:
+                return ext.registered_domain
+            return host
+        except Exception:
+            pass
 
     labels = host.split(".")
     if len(labels) <= 2:
