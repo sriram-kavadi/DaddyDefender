@@ -1,0 +1,22 @@
+# Environment and secrets
+.env
+*.env
+backend/.env
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Databases
+*.db
+*.sqlite3
+backend/*.db
+
+# IDE and OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

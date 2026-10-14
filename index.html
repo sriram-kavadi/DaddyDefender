@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Threat Check | Test a link or message for phishing signs</title>
+  <meta name="description" content="Paste a link or a message and see a risk level, the exact red flags found, and what to do next. Runs in your browser. Nothing is uploaded.">
+  <meta name="theme-color" content="#16181d">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html"><img src="favicon.svg" alt="" width="28" height="28">Threat Check</a>
+      <div class="engine-status" id="engine-status" title="Analysis engine connectivity">
+        <span class="status-dot checking" id="status-dot"></span>
+        <span class="status-label" id="status-label">Checking engine...</span>
+      </div>
+      <nav class="site-nav" aria-label="Main">
+        <a href="index.html" aria-current="page">Analyzer</a>
+        <a href="index.html#how">How it works</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    <section class="hero">
+      <h1>Paste a link or a message. See why it looks like a scam.</h1>
+      <p class="lede">Threat Check reads the link structure, the wording, and what a message asks you to do. It gives a risk level, lists every red flag it found, and tells you what to do next. Powered by heuristic rules and live threat intelligence integration.</p>
+    </section>
+
+    <div class="stats-bar" id="stats-bar" hidden>
+      <div class="stat-item">
+        <span class="stat-num" id="stat-total">0</span>
+        <span class="stat-label">Total Scans</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num" id="stat-avg">0</span>
+        <span class="stat-label">Avg Threat Score</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num" id="stat-threats">0</span>
+        <span class="stat-label">Threats Detected</span>
+      </div>
+    </div>
+
+    <section aria-labelledby="tool-title">
+      <form id="form" class="tool" novalidate>
+        <label for="input" id="tool-title">Link or message to check <span class="hint">(link or pasted message text)</span></label>
+        <textarea id="input" name="input" maxlength="10000" spellcheck="false" autocomplete="off" aria-describedby="input-error"></textarea>
+        <p id="input-error" class="form-error" role="alert" hidden></p>
+        <div class="actions">
+          <button type="submit" id="btn-submit" class="btn btn-primary">Analyze</button>
+          <button type="button" id="clear" class="btn">Clear</button>
+        </div>
+        <div id="loading-spinner" class="loading-state" style="display: none;" hidden>
+          <div class="spinner"></div>
+          <p id="loading-msg">Running heuristic analysis and querying threat intelligence providers...</p>
+        </div>
+        <div class="examples">
+          <span>Try an example:</span>
+          <button type="button" class="btn btn-small" data-example="link">Fake login link</button>
+          <button type="button" class="btn btn-small" data-example="scam">Scam message</button>
+          <button type="button" class="btn btn-small" data-example="safe">Ordinary message</button>
+        </div>
+      </form>
+
+      <div id="result" class="result" tabindex="-1" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="history" id="history-section" aria-labelledby="history-title" hidden>
+      <div class="history-head">
+        <h2 id="history-title">Recent checks</h2>
+        <button type="button" id="clear-history" class="btn btn-small">Clear history</button>
+      </div>
+      <div class="history-tabs" id="history-tabs">
+        <button type="button" class="tab-btn active" id="tab-local">Local History</button>
+        <button type="button" class="tab-btn" id="tab-server">Server Scans (<span id="server-count">0</span>)</button>
+      </div>
+      <p class="hint" id="history-hint">Saved only in this browser. Only the first part of each item is kept.</p>
+      <ul id="history-list"></ul>
+    </section>
+
+    <section class="block" id="how" aria-labelledby="how-title">
+      <h2 id="how-title">What it checks</h2>
+      <div class="cols">
+        <div>
+          <h3>In a link</h3>
+          <ul>
+            <li>No HTTPS</li>
+            <li>An IP address in place of a domain name</li>
+            <li>A username section before the real host (the @ trick)</li>
+            <li>Look-alike characters from other alphabets</li>
+            <li>Link shorteners that hide the destination</li>
+            <li>Many subdomains or several hyphens</li>
+            <li>Domains that imitate known brands through typos, swapped characters, or added words</li>
+            <li>Domain endings common in scam campaigns</li>
+            <li>Words such as login or verify in the address</li>
+            <li>Unusual ports, very long addresses, another address hidden in a parameter, and downloads that can run software</li>
+          </ul>
+        </div>
+        <div>
+          <h3>In a message</h3>
+          <ul>
+            <li>Pressure to act quickly</li>
+            <li>Threats about locked accounts or legal trouble</li>
+            <li>Requests for passwords, one-time codes, card or ID numbers</li>
+            <li>Prizes, refunds, and rewards you did not ask for</li>
+            <li>Gift cards, crypto, wire transfers, and upfront fees</li>
+            <li>Generic greetings</li>
+            <li>Instructions to click a link or open an attachment</li>
+            <li>Requests for secrecy or remote access to your device</li>
+            <li>Claims to be a tax office, police, or courier</li>
+            <li>A brand name in the text with a link that goes somewhere else</li>
+            <li>Every link inside the message is analyzed on its own</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2 style="margin-top:2.5rem">How the level is decided</h2>
+      <p>Each red flag adds points. The total is capped at 100 and mapped to a level. For a message, the points from the wording are added to the points of its riskiest link. A level is an estimate, so a low rating never proves something is safe.</p>
+      <table>
+        <thead><tr><th>Level</th><th>Score</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td>Low</td><td class="num">0 to 24</td><td>No strong warning signs found.</td></tr>
+          <tr><td>Medium</td><td class="num">25 to 49</td><td>Some warning signs. Verify through an official channel.</td></tr>
+          <tr><td>High</td><td class="num">50 to 74</td><td>Several signs that match common scam patterns.</td></tr>
+          <tr><td>Critical</td><td class="num">75 to 100</td><td>Strong match for phishing. Do not interact.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 style="margin-top:2.5rem">What it cannot see</h2>
+      <p>This tool only reads the text you paste. It cannot see how old a domain is, whether a site has a valid certificate, where a link redirects, or whether an address is on a blocklist. Those checks need a server, and this site never sends your input anywhere. Treat the result as a second opinion, and when in doubt, contact the organization using details you already trust.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>Hackathon prototype. Rule-based, runs in your browser.</span>
+      <span><a href="privacy.html">Privacy policy</a> &nbsp;&middot;&nbsp; <a href="terms.html">Terms and conditions</a></span>
+    </div>
+  </footer>
+
+  <script src="analyzer.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
