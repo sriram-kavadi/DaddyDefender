@@ -12,7 +12,15 @@ DATABASE_PATH = os.getenv("DATABASE_PATH", "threatcheck.db")
 
 async def get_db_path() -> str:
     """Return the resolved database path."""
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), DATABASE_PATH)
+    if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+        default_path = "/tmp/threatcheck.db"
+    else:
+        default_path = "threatcheck.db"
+
+    path = os.getenv("DATABASE_PATH", default_path)
+    if os.path.isabs(path):
+        return path
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), path)
 
 
 async def init_db():

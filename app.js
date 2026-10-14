@@ -5,11 +5,13 @@
   var HISTORY_MAX = 10;
   var PREVIEW_LEN = 80;
 
-  // Determine API Base URL
-  // If served from a web server on port 8000, use relative paths; otherwise default to localhost:8000
-  var API_BASE = (window.location.port === '8000' || window.location.port === '8001')
-    ? ''
-    : 'http://localhost:8000';
+  // Determine API Base URL:
+  // 1. If explicitly set via window.THREATCHECK_API_BASE, use that
+  // 2. If running locally (localhost/127.0.0.1) on a frontend dev port (e.g. 5500), connect to local backend port 8000
+  // 3. Otherwise (production deployment on Vercel, or served on port 8000), use relative ''
+  var isLocalDev = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+                   window.location.port !== '8000' && window.location.port !== '8001';
+  var API_BASE = window.THREATCHECK_API_BASE || (isLocalDev ? 'http://localhost:8000' : '');
 
   var backendOnline = false;
   var activeHistoryTab = 'local'; // 'local' or 'server'
